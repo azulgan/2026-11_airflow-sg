@@ -1,0 +1,102 @@
+"""
+Other DAG
+"""
+
+import textwrap
+from datetime import datetime, timedelta
+
+from airflow.models.dag import DAG
+from airflow.operators.bash import BashOperator
+from airflow.models import Variable
+#from airflow.models.taskinstance import TaskInstance
+
+#the_operator = Variable.get("the_operator")
+
+default_args={
+        "depends_on_past": False,
+        "email": ["{{operator_email}}"],
+        "email_on_failure": False,
+        "email_on_retry": False,
+        "retries": 1,
+        "retry_delay": timedelta(seconds=15),
+        # 'queue': 'bash_queue',
+        # 'pool': 'backfill',
+        # 'priority_weight': 10,
+        # 'end_date': datetime(2026, 11, 18),
+        # 'wait_for_downstream': False,
+        # 'sla': timedelta(hours=2),
+        # 'execution_timeout': timedelta(seconds=300),
+        # 'on_failure_callback': some_function, # or list of functions
+        # 'on_success_callback': some_other_function, # or list of functions
+        # 'on_retry_callback': another_function, # or list of functions
+        # 'sla_miss_callback': yet_another_function, # or list of functions
+        # 'trigger_rule': 'all_success'
+    }
+
+with DAG(
+    "other-dag",
+    # These args will get passed on to each operator
+    # You can override them on a per-task basis during operator initialization
+    default_args=default_args,
+    description="Other DAG",
+    schedule=timedelta(days=1),
+    start_date=datetime(2026, 11, 18),
+    catchup=False,
+    tags=["crash test", "Alan"],
+) as dag:
+
+    t1 = BashOperator(
+        task_id="print_date",
+        bash_command="date",
+    )
+
+    t2 = BashOperator(
+        task_id="sleep",
+        depends_on_past=False,
+        bash_command="sleep 5",
+        retries=3,
+    )
+    t1.doc_md = textwrap.dedent(
+        """\
+    #### Task Documentation
+    You can document your task using the attributes `doc_md` (markdown),
+    `doc` (plain text), `doc_rst`, `doc_json`, `doc_yaml` which gets
+    rendered in the UI's Task Instance Details page.
+    ![img](http://montcs.bloomu.edu/~bobmon/Semesters/2012-01/491/import%20soul.png)
+    **Image Credit:** Randall Munroe, [XKCD](https://xkcd.com/license.html)
+    """
+    )
+
+    templated_command = textwrap.dedent(
+        """
+    {% for i in range(5) %}
+        echo "{{ var.value.the_operator }} : {{ ds }}"
+        echo "{{ macros.ds_add(ds, 7)}}"
+    {% endfor %}
+    """
+    )
+
+    t3 = BashOperator(
+        task_id="templated",
+        depends_on_past=False,
+        bash_command=templated_command,
+    )
+
+    #ti = context['task_instance']
+    #try_number = ti.try_number
+    
+    fail_except_run2 = textwrap.dedent(
+        "if [ {{ti.try_number}} -le 2 ]; then exit 5 else echo OK; fi" #if try_number == 1 else "echo OK"
+    )
+
+    plantage = BashOperator(
+        task_id="plantage",
+        depends_on_past=False,
+        bash_command=fail_except_run2,
+        retries = 3
+    )
+
+    t1 >> [t2, t3]
+    #t1 >> t4
+    t3 >> plantage
+    dag.doc_md = __doc__

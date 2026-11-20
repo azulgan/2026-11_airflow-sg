@@ -78,6 +78,14 @@ with DAG(
         bash_command=templated_command,
     )
 
-    t1 >> [t2, t3]
+    #plantage = BashOperator(
+    #    task_id="plantage",
+    #    depends_on_past=False,
+    #    bash_command="exit 5",
+    #)
 
+
+    t1 >> [t2, t3]
+    #t1 >> t4
+    #t3 >> plantage
     dag.doc_md = __doc__
