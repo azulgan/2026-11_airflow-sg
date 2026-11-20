@@ -379,9 +379,3 @@ def bitcoin_dag():
 
 dag = bitcoin_dag()
     
-
-
-
-    
-    
-    
