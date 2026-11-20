@@ -6,6 +6,11 @@ from datetime import datetime, timedelta
 from airflow.sdk import dag, task
 from airflow.sdk import get_current_context
 import requests
+import logging
+
+def log(str):
+    logger = logging.getLogger(__name__)
+    logger.info(str)
 
 API = "https://api.coingecko.com/api/v3/coins/bitcoin/history"
 
